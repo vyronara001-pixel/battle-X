@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>BATTLE X — One City. Endless Possibilities.</title>
+<style>
+:root{--cyan:#48e5ff;--gold:#ffd166;--panel:rgba(8,14,26,.88);--line:rgba(110,220,255,.35)}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080d18;color:#fff;font-family:Arial,Helvetica,sans-serif;touch-action:none}
+canvas{display:block}button{font:700 14px Arial;color:#fff;background:linear-gradient(135deg,#12617a,#163a68);border:1px solid #65ddff;border-radius:9px;padding:11px 16px;cursor:pointer;box-shadow:0 4px 18px #0008}button:active{transform:scale(.97)}button:disabled{opacity:.4}
+#loading,#menu,#pause,#modal{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 50% 35%,#163b59,#070b14 70%)}
+#loading{z-index:50;flex-direction:column;gap:14px}#loadbar{width:min(280px,70vw);height:7px;background:#22364a;border-radius:10px;overflow:hidden}#loadfill{height:100%;width:0;background:var(--cyan);transition:width .2s}
+#menu .panel,#pause .panel,#modal .panel{width:min(440px,92vw);padding:28px;border:1px solid var(--line);border-radius:18px;background:var(--panel);box-shadow:0 20px 80px #000b;text-align:center;backdrop-filter:blur(12px)}
+.logo{font-size:clamp(42px,9vw,68px);font-weight:1000;letter-spacing:5px;color:#fff;text-shadow:0 0 18px #37dfff,4px 5px 0 #12516a;margin:0}.tag{color:var(--gold);letter-spacing:3px;font-size:11px;margin:5px 0 24px}.menuBtns{display:grid;gap:10px}.small{font-size:12px;color:#a8bfd0;line-height:1.5}.hidden{display:none!important}
+#hud{position:fixed;inset:0;z-index:5;pointer-events:none;display:none}
+.hudbox{position:absolute;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;text-shadow:0 1px 2px #000;font-size:13px}
+#stats{top:12px;left:12px;min-width:150px}#cash{font-size:19px;color:var(--gold);font-weight:bold}#bars{margin-top:6px;color:#b8d7e8;font-size:11px} .bar{height:5px;background:#263746;border-radius:8px;margin:3px 0 5px;overflow:hidden}.bar>i{display:block;height:100%;background:#52e6a6;width:100%}
+#objective{top:12px;left:50%;transform:translateX(-50%);max-width:min(370px,48vw);text-align:center;color:#dff8ff}
+#vehicleInfo{top:12px;right:12px;text-align:right;display:none}#map{position:absolute;right:12px;top:86px;width:142px;height:142px;border-radius:50%;border:2px solid #7eeaff;background:#07121cdd;overflow:hidden}
+#map canvas{width:100%;height:100%}#hint{bottom:18px;left:50%;transform:translateX(-50%);white-space:nowrap}
+#toast{position:absolute;top:25%;left:50%;transform:translate(-50%,-50%);background:#071421ed;border:1px solid var(--cyan);border-radius:10px;padding:12px 18px;opacity:0;transition:opacity .25s;text-align:center}
+#cross{position:absolute;left:50%;top:50%;width:5px;height:5px;border:1px solid #dffaff;border-radius:50%;transform:translate(-50%,-50%);opacity:.55}
+#touch{position:fixed;inset:0;z-index:8;display:none;pointer-events:none}
+#stick{position:absolute;left:20px;bottom:22px;width:122px;height:122px;border:1px solid #8beaff88;border-radius:50%;background:#0b243b88;pointer-events:auto}
+#nub{position:absolute;width:48px;height:48px;left:36px;top:36px;border-radius:50%;background:#64dfff99;border:1px solid #c9f8ff}
+.touchBtns{position:absolute;right:18px;bottom:24px;display:grid;grid-template-columns:repeat(2,65px);gap:9px;pointer-events:auto}
+.touchBtns button{width:65px;height:54px;padding:4px;font-size:11px;background:#09243dcc}
+#lookarea{position:absolute;right:0;top:0;width:52%;height:65%;pointer-events:auto}
+#pause{z-index:30}#modal{z-index:31;background:#020812bb}
+#modal .panel{text-align:left}#modal h2{margin-top:0;color:var(--cyan)}#modal p{color:#c7d8e5;line-height:1.5}
+#help{position:absolute;left:12px;bottom:12px;color:#b9d1df;font-size:11px;text-shadow:0 1px 3px #000;max-width:300px}
+@media(max-width:700px){#map{width:105px;height:105px;top:95px}#objective{top:auto;bottom:155px;max-width:56vw;font-size:11px}#hint{bottom:160px;font-size:11px}#help{display:none}#vehicleInfo{top:12px;right:12px;font-size:11px}#stats{min-width:120px}.hudbox{padding:7px 9px}}
+</style>
+</head>
+<body>
+<div id="loading"><div class="logo">BATTLE X</div><div class="tag">ONE CITY. ENDLESS POSSIBILITIES.</div><div id="loadbar"><div id="loadfill"></div></div><div id="loadtext" class="small">Building the city…</div></div>
+<div id="menu" class="hidden"><div class="panel"><h1 class="logo">BATTLE X</h1><div class="tag">ONE CITY. ENDLESS POSSIBILITIES.</div><div class="menuBtns"><button id="play">▶ PLAY CITY</button><button id="settings">⚙ SETTINGS</button><button id="how">HOW TO PLAY</button></div><p class="small">A fictional, free-roam city sandbox. Explore, collect, drive and discover.</p></div></div>
+<div id="pause" class="hidden"><div class="panel"><h2>PAUSED</h2><div class="menuBtns"><button id="resume">RESUME</button><button id="restart">RESTART CITY</button><button id="quit">MAIN MENU</button></div></div></div>
+<div id="modal" class="hidden"><div class="panel"><h2 id="modalTitle">BATTLE X</h2><div id="modalBody"></div><div class="menuBtns" id="modalButtons"></div></div></div>
+<div id="hud">
+ <div id="stats" class="hudbox"><div id="cash">$ 250</div><div id="bars">ENERGY <span id="energyTxt">100</span>%</div><div class="bar"><i id="energyBar"></i></div><div id="healthTxt">VITALITY 100%</div><div class="bar"><i id="healthBar" style="background:#ff7184"></i></div></div>
+ <div id="objective" class="hudbox">Explore BATTLE X City</div>
+ <div id="vehicleInfo" class="hudbox">CITY RUNNER<br><b>0 km/h</b></div>
+ <div id="map"><canvas id="mapCanvas" width="180" height="180"></canvas></div>
+ <div id="hint" class="hudbox">WASD move · E interact · Shift sprint · Space jump · Esc pause</div>
+ <div id="toast"></div><div id="cross"></div>
+ <div id="help">WASD: move/drive · Mouse: look · E: enter / interact · F: exit vehicle · Shift: sprint · Space: jump · M: day/night</div>
+</div>
+<div id="touch"><div id="stick"><div id="nub"></div></div><div id="lookarea"></div><div class="touchBtns"><button id="tJump">JUMP</button><button id="tSprint">SPRINT</button><button id="tUse">USE / EXIT</button><button id="tPause">PAUSE</button><button id="tBrake">BRAKE</button><button id="tDay">DAY / NIGHT</button></div></div>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const $=id=>document.getElementById(id);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x91c9e8);scene.fog=new THREE.Fog(0x91c9e8,100,390);
+const camera=new THREE.PerspectiveCamera(68,innerWidth/innerHeight,.1,700);
+const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});
+renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+const clock=new THREE.Clock();const mat=(c,rough=.85)=>new THREE.MeshStandardMaterial({color:c,roughness:rough});
+const M={road:mat(0x252d38),side:mat(0x9aa6aa),white:mat(0xe8f0e9),yellow:mat(0xf2c14e),grass:mat(0x39744d),trunk:mat(0x60432e),leaf:mat(0x286a48),glass:new THREE.MeshStandardMaterial({color:0x69b8cf,metalness:.25,roughness:.2}),dark:mat(0x182330),gold:mat(0xf0bd54),brick:mat(0x9c6658),blue:mat(0x557b9b)};
+const boxGeo=new THREE.BoxGeometry(1,1,1);
+function cube(parent,x,y,z,sx,sy,sz,material){let o=new THREE.Mesh(boxGeo,material);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=sy>1;o.receiveShadow=true;parent.add(o);return o}
+function group(parent=scene){let g=new THREE.Group();parent.add(g);return g}
+const world=group();let buildings=[],cars=[],collectibles=[],trees=[],lamps=[],interactables=[];
+cube(world,0,-.55,0,500,1,500,mat(0x385d45));
+const roadMat=M.road, sidewalk=M.side;
+const roads=[-120,-60,0,60,120];
+for(let p of roads){cube(world,p,.02,0,15,.12,340,roadMat);cube(world,0,.02,p,340,.12,15,roadMat);cube(world,p+9,.08,0,3,.25,340,sidewalk);cube(world,p-9,.08,0,3,.25,340,sidewalk);cube(world,0,.08,p+9,340,.25,3,sidewalk);cube(world,0,.08,p-9,340,.25,3,sidewalk);
+ for(let q=-160;q<=160;q+=12){cube(world,p,.09,q, .18,.025,5,M.yellow);cube(world,q,.09,p,5,.025,.18,M.yellow)}}
+function makeBuilding(x,z,w,d,h,type=0){
+ const g=group(world);let colors=[0x899eac,0xb3a18a,0x6f8797,0xc4c7c1,0x8a7770,0x667b86];let body=mat(colors[(Math.abs(x+z+type*7)|0)%colors.length]);
+ cube(g,x,h/2,z,w,h,d,body);
+ cube(g,x,h+.35,z,w+1,.7,d+1,mat(0x344454));
+ for(let y=3;y<h-1;y+=3.2){for(let xx=-w/2+1.3;xx<w/2-0.6;xx+=2.6){cube(g,x+xx,y,z+d/2+.025,1.25,1.25,.08,M.glass);cube(g,x+xx,y,z-d/2-.025,1.25,1.25,.08,M.glass)}}
+ for(let y=3;y<h-1;y+=3.2){for(let zz=-d/2+1;zz<d/2;zz+=3){cube(g,x+w/2+.025,y,z+zz,.08,1.25,1.35,M.glass)}}
+ buildings.push({x,z,w,d,h,g});
+}
+let seed=17;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
+for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){
+ let cx=gx*60,cz=gz*60;
+ for(let sx of [-1,1])for(let sz of [-1,1]){
+  let x=cx+sx*(16+rand()*8),z=cz+sz*(16+rand()*8),w=12+rand()*8,d=12+rand()*8,h=9+rand()*38;
+  if(Math.abs(x)<20&&Math.abs(z)<20)continue;
+  makeBuilding(x,z,w,d,h);
+ }}
+// landmark buildings
+function sign(x,y,z,label,color=0x3edcff){let c=document.createElement('canvas');c.width=512;c.height=128;let ctx=c.getContext('2d');ctx.fillStyle='#071a2b';ctx.fillRect(0,0,512,128);ctx.fillStyle='#'+color.toString(16).padStart(6,'0');ctx.font='bold 64px Arial';ctx.textAlign='center';ctx.fillText(label,256,86);let t=new THREE.CanvasTexture(c);let m=new THREE.MeshBasicMaterial({map:t,transparent:true});let a=new THREE.Mesh(new THREE.PlaneGeometry(14,3.5),m);a.position.set(x,y,z);scene.add(a)}
+function landmark(x,z,label,color){let g=group(world);cube(g,x,7,z,22,14,18,mat(color));cube(g,x,14.2,z,23,.5,19,M.gold);cube(g,x,3,z+9.2,5,6,.3,M.glass);sign(x,11,z+9.4,label,0x48e5ff);return g}
+landmark(-60,-60,'NOVA BANK',0x8b9cae);landmark(60,-60,'BYTE MART',0x8b796b);landmark(-60,60,'FUEL POINT',0x9d6547);landmark(60,60,'CITY CAFE',0x8b6655);
+// park
+cube(world,0,.12,180,90,.3,45,M.grass);
+function tree(x,z){let g=group(world);cube(g,x,2,z,.8,4,.8,M.trunk);let a=new THREE.Mesh(new THREE.IcosahedronGeometry(2.5,1),M.leaf);a.position.set(x,5,z);a.castShadow=true;g.add(a);trees.push(g)}
+for(let i=0;i<45;i++){let x=-42+rand()*84,z=160+rand()*40;tree(x,z)}
+for(let i=0;i<30;i++){let x=-155+rand()*310,z=-155+rand()*310;if(roads.some(p=>Math.abs(x-p)<13||Math.abs(z-p)<13))continue;tree(x,z)}
+function lamp(x,z){let g=group(world);cube(g,x,3,z,.22,6,.22,M.dark);cube(g,x+1.2,5.8,z,2.5,.18,.18,M.dark);let bulb=new THREE.PointLight(0xffd58b,0,12);bulb.position.set(x+2,5.5,z);g.add(bulb);lamps.push(bulb)}
+for(let p of roads)for(let q=-150;q<=150;q+=30){lamp(p+11,q);lamp(q,p+11)}
+// enterable houses / interiors
+const houseSpots=[{x:120,z:0,name:'Harbor House'},{x:0,z:120,name:'Garden Loft'},{x:-120,z:0,name:'Brick Residence'}];
+for(let h of houseSpots){let g=group(world);cube(g,h.x,4,h.z,18,8,16,M.brick);cube(g,h.x,8.2,h.z,19,.5,17,M.dark);cube(g,h.x,2,h.z+8.1,3,4,.2,M.gold);interactables.push({x:h.x,z:h.z+11,name:h.name,kind:'house',data:h})}
+// interior room off-map, enter by teleport
+const interior=group(world);interior.visible=false;cube(interior,0,-.2,0,28,.5,24,mat(0x5b5147));cube(interior,0,3, -12,28,6,.5,mat(0x8a7864));cube(interior,-14,3,0,.5,6,24,mat(0x8a7864));cube(interior,14,3,0,.5,6,24,mat(0x8a7864));cube(interior,0,6,0,28,.5,24,mat(0x554a40));cube(interior,-5,1.3,-3,6,2.5,3,mat(0x8b5f43));cube(interior,6,1,-5,4,2,2,mat(0x344f60));cube(interior,0,1,6,8,2,2,mat(0x766a58));
+// player
+const player=group();scene.add(player);const body=group(player);cube(body,0,1.15,0,.8,1.15,.45,mat(0x1d9bb5));let head=new THREE.Mesh(new THREE.SphereGeometry(.32,12,10),mat(0xd8a77d));head.position.y=2;body.add(head);cube(body,-.25,.35,0,.25,.7,.3,mat(0x243b59));cube(body,.25,.35,0,.25,.7,.3,mat(0x243b59));
+player.position.set(4,0,4);let playerYaw=0,camYaw=0,camPitch=.23,vertical=0,onGround=true,energy=100,health=100,cash=250,inVehicle=null,inside=false;
+const cameraTarget=new THREE.Vector3();let keys={},joy={x:0,y:0},look={x:0,y:0},sprinting=false,braking=false;
+function makeCar(x,z,color=0x2e9bce,style=0){
+ let g=group(world);let paint=mat(color,.35),dark=mat(0x18212b,.45),glass=mat(0x7fc6d9,.2);
+ cube(g,0,.65,0,2.1,.75,4.1,paint);cube(g,0,1.25,-.25,1.65,.8,2.1,paint);cube(g,0,1.3,-.25,1.48,.58,1.95,glass);
+ for(let sx of [-1,1])for(let zz of [-1.35,1.35]){let wh=new THREE.Mesh(new THREE.CylinderGeometry(.38,.38,.22,12),dark);wh.rotation.z=Math.PI/2;wh.position.set(sx*1.05,.4,zz);g.add(wh)}
+ cube(g,-.75,.55,2.06,.35,.22,.08,M.white);cube(g,.75,.55,2.06,.35,.22,.08,M.white);cube(g,-.75,.55,-2.06,.35,.22,.08,mat(0xff594e));cube(g,.75,.55,-2.06,.35,.22,.08,mat(0xff594e));
+ g.position.set(x,0,z);g.rotation.y=0;let c={g,speed:0,yaw:0,color,style,name:['NOVA','COMET','RANGER','VOLT'][style%4],price:style===0?0:350+style*250};cars.push(c);return c;
+}
+makeCar(8,8,0x258bc3,0);makeCar(-15,5,0xd34d50,1);makeCar(65,10,0xd6a23e,2);makeCar(-72,-5,0x6b69bd,3);makeCar(10,65,0x48a66c,1);
+for(let i=0;i<24;i++){let p=roads[Math.floor(rand()*roads.length)],q=-150+rand()*300;let c=makeCar(p+(rand()-.5)*5,q,[0x258bc3,0xd34d50,0xd6a23e,0x6b69bd,0x48a66c,0xbfc5ca][i%6],i%4);c.speed=(i%6===0?5:0)}
+function moneyPickup(x,z,amount=50){let g=group(world);let coin=new THREE.Mesh(new THREE.TorusGeometry(.55,.16,6,14),M.gold);coin.rotation.x=Math.PI/2;coin.position.y=1;g.add(coin);let core=new THREE.Mesh(new THREE.CylinderGeometry(.35,.35,.12,12),mat(0xffdf78));core.position.y=1;g.add(core);g.position.set(x,0,z);collectibles.push({g,amount,phase:rand()*6})}
+for(let i=0;i<22;i++){let x=-145+rand()*290,z=-145+rand()*290;if(roads.some(p=>Math.abs(x-p)<10||Math.abs(z-p)<10))continue;moneyPickup(x,z,25+Math.floor(rand()*5)*25)}
+// mission tokens
+moneyPickup(0,180,150);moneyPickup(-60,-60,200); 
+// lights
+const hemi=new THREE.HemisphereLight(0xcdeaff,0x314332,1.35);scene.add(hemi);const sun=new THREE.DirectionalLight(0xffedcf,2.1);sun.position.set(-70,120,50);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.left=-120;sun.shadow.camera.right=120;sun.shadow.camera.top=120;sun.shadow.camera.bottom=-120;scene.add(sun);
+let night=false;function toggleDay(){night=!night;scene.background.set(night?0x071326:0x91c9e8);scene.fog.color.set(night?0x071326:0x91c9e8);hemi.intensity=night?.35:1.35;sun.intensity=night?.12:2.1;lamps.forEach(l=>l.intensity=night?1.8:0)}
+// UI / progression
+let missionCount=0,inventory=['City map','Pocket radio'],lastToast=0;
+function toast(t){$('toast').textContent=t;$('toast').style.opacity=1;clearTimeout(lastToast);lastToast=setTimeout(()=>$('toast').style.opacity=0,2300)}
+function updateStats(){$('cash').textContent='$ '+cash.toLocaleString('en-IN');$('energyTxt').textContent=Math.round(energy);$('energyBar').style.width=energy+'%';$('healthTxt').textContent='VITALITY '+Math.round(health)+'%';$('healthBar').style.width=health+'%'}
+function modal(title,body,buttons){$('modalTitle').textContent=title;$('modalBody').innerHTML=body;$('modalButtons').innerHTML='';for(let b of buttons){let el=document.createElement('button');el.textContent=b.label;el.onclick=b.action;$('modalButtons').appendChild(el)}$('modal').classList.remove('hidden')}
+function closeModal(){$('modal').classList.add('hidden')}
+function interact(){
+ if(inVehicle){exitCar();return}
+ let best=null,dist=1e9;for(let it of interactables){let d=Math.hypot(player.position.x-it.x,player.position.z-it.z);if(d<dist){best=it;dist=d}}
+ for(let c of cars){let d=Math.hypot(player.position.x-c.g.position.x,player.position.z-c.g.position.z);if(d<dist){best={kind:'car',data:c};dist=d}}
+ if(!best||dist>5){toast('Nothing nearby to interact with');return}
+ if(best.kind==='car'){enterCar(best.data);return}
+ if(best.kind==='shop'){modal('BYTE MART · CITY SHOP','<p>Pick up a city style upgrade. These are cosmetic-only rewards.</p><p>• Neon jacket — $120<br>• Custom sneakers — $80<br>• Dashboard charm — $60</p>',[{label:'NEON JACKET · $120',action:()=>{if(cash>=120){cash-=120;inventory.push('Neon jacket');updateStats();toast('Neon jacket added to inventory');closeModal()}else toast('Not enough cash')}},{label:'SNEAKERS · $80',action:()=>{if(cash>=80){cash-=80;inventory.push('Custom sneakers');updateStats();toast('Sneakers added to inventory');closeModal()}else toast('Not enough cash')}},{label:'CLOSE',action:closeModal}]);return}
+ if(best.kind==='house'){modal(best.name,'Step inside and explore this small furnished hideaway. <br><br><span class="small">Your city position will be saved.</span>',[{label:'ENTER HOUSE',action:()=>{closeModal();inside=true;world.visible=false;interior.visible=true;player.position.set(0,0,2);inVehicle=null;toast('Entered '+best.name)}},{label:'CANCEL',action:closeModal}]);return}
+}
+function enterCar(c){inVehicle=c;player.visible=false;c.speed=0;toast('Entered '+c.name+' · Drive with WASD');$('vehicleInfo').style.display='block';$('hint').textContent='WASD drive · Space brake · F / E exit · Mouse look'}
+function exitCar(){if(!inVehicle)return;player.visible=true;player.position.copy(inVehicle.g.position);player.position.x+=3;playerYaw=inVehicle.g.rotation.y;inVehicle.speed=0;inVehicle=null;$('vehicleInfo').style.display='none';$('hint').textContent='WASD move · E interact · Shift sprint · Space jump · Esc pause';toast('Exited vehicle')}
+function mission(){missionCount++;let reward=150+missionCount*50;cash+=reward;inventory.push('Mission badge '+missionCount);updateStats();toast('CITY TASK COMPLETE · +$'+reward);$('objective').textContent='Task complete! Find another glowing cash token.'}
+function bankPuzzle(){modal('NOVA BANK · LOGIC LOCK','<p>Fictional puzzle terminal. Solve the sequence to claim a city bonus.</p><p><b>Sequence:</b> 2, 4, 8, 16, ?</p><input id="answer" type="number" placeholder="Enter next number" style="width:100%;padding:12px;border-radius:8px;border:1px solid #56dfff;background:#071421;color:white"><p class="small">No real banking or account access is involved.</p>',[{label:'SUBMIT',action:()=>{let v=Number($('answer')?.value);if(v===32){cash+=500;updateStats();mission();toast('Puzzle solved · +$500 bonus');closeModal()}else toast('Not quite — look for the pattern')}},{label:'CLOSE',action:closeModal}])}
+function nearLandmark(){let d=Math.hypot(player.position.x+60,player.position.z+60);if(d<13&&!nearLandmark.bank){nearLandmark.bank=true;modal('NOVA BANK','Welcome to the fictional Nova Bank puzzle kiosk.',[{label:'PLAY PUZZLE',action:bankPuzzle},{label:'LATER',action:closeModal}])}if(d>20)nearLandmark.bank=false}
+function garage(){modal('CITY GARAGE','<p>Choose a new ride. Purchased cars appear beside the garage plaza.</p><div id="garageList"></div>',[{label:'CLOSE',action:closeModal}]);let div=$('garageList');cars.slice(0,4).forEach((c,i)=>{let b=document.createElement('button');b.style.margin='4px';b.textContent=c.name+' · '+(c.price?'$'+c.price:'FREE');b.onclick=()=>{if(c.price>cash){toast('Not enough cash');return}cash-=c.price;updateStats();makeCar(12+i*3,18,[0x258bc3,0xd34d50,0xd6a23e,0x6b69bd][i],i);toast('New '+c.name+' added to your garage');closeModal()};div.appendChild(b)})}
+// keyboard
+addEventListener('keydown',e=>{keys[e.code]=true;if(['Space','ArrowUp','ArrowDown'].includes(e.code))e.preventDefault();if(e.code==='KeyE')interact();if(e.code==='KeyF')exitCar();if(e.code==='Escape')togglePause();if(e.code==='KeyM')toggleDay();if(e.code==='KeyI')modal('INVENTORY','<p>'+inventory.join('<br>')+'</p><p>Cash: $'+cash+'</p>',[{label:'CLOSE',action:closeModal}]);if(e.code==='KeyG')garage()});
+addEventListener('keyup',e=>keys[e.code]=false);
+let paused=false;function togglePause(){if($('modal').classList.contains('hidden')===false)return;paused=!paused;$('pause').classList.toggle('hidden',!paused);if(paused)document.exitPointerLock?.()}
+$('resume').onclick=()=>{paused=false;$('pause').classList.add('hidden')};$('restart').onclick=()=>location.reload();$('quit').onclick=()=>{paused=false;$('pause').classList.add('hidden');$('hud').style.display='none';$('menu').classList.remove('hidden');};
+$('play').onclick=()=>{ $('menu').classList.add('hidden');$('hud').style.display='block';if(innerWidth>700)renderer.domElement.requestPointerLock?.();toast('Welcome to BATTLE X City');};
+$('settings').onclick=()=>modal('SETTINGS','<p>Graphics quality: balanced for mobile. Mouse sensitivity and camera distance are adjustable with the wheel and drag.</p><p>Press M in-game to switch day and night.</p>',[{label:'OK',action:closeModal}]);
+$('how').onclick=()=>modal('HOW TO PLAY','<p><b>Desktop:</b> WASD move, mouse look, Shift sprint, Space jump, E interact/enter car, F exit, G garage, I inventory, M day/night, Esc pause.</p><p><b>Mobile:</b> Left joystick to move, drag right side to look, use the action buttons.</p><p>Find gold tokens, visit Nova Bank, explore homes and collect mission rewards.</p>',[{label:'GOT IT',action:closeModal}]);
+$('tUse').onclick=interact;$('tPause').onclick=togglePause;$('tDay').onclick=toggleDay;$('tJump').ontouchstart=()=>keys.Space=true;$('tJump').ontouchend=()=>keys.Space=false;$('tSprint').ontouchstart=()=>sprinting=true;$('tSprint').ontouchend=()=>sprinting=false;$('tBrake').ontouchstart=()=>braking=true;$('tBrake').ontouchend=()=>braking=false;
+// pointer camera
+let dragging=false,lastX=0,lastY=0;renderer.domElement.addEventListener('click',()=>{if(!$('menu').classList.contains('hidden')===false&&innerWidth>700)renderer.domElement.requestPointerLock?.()});
+document.addEventListener('mousemove',e=>{if(document.pointerLockElement===renderer.domElement){camYaw-=e.movementX*.0025;camPitch=THREE.MathUtils.clamp(camPitch+e.movementY*.0018,-.05,.85)}else if(dragging){camYaw-=(e.clientX-lastX)*.006;camPitch=THREE.MathUtils.clamp(camPitch+(e.clientY-lastY)*.004,-.05,.85);lastX=e.clientX;lastY=e.clientY}});
+renderer.domElement.addEventListener('pointerdown',e=>{if(e.pointerType==='touch'){dragging=true;lastX=e.clientX;lastY=e.clientY}});addEventListener('pointerup',()=>dragging=false);
+$('lookarea').addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;$('lookarea').setPointerCapture?.(e.pointerId)});$('lookarea').addEventListener('pointermove',e=>{if(dragging){camYaw-=(e.clientX-lastX)*.006;camPitch=THREE.MathUtils.clamp(camPitch+(e.clientY-lastY)*.004,-.05,.85);lastX=e.clientX;lastY=e.clientY}});$('lookarea').addEventListener('pointerup',()=>dragging=false);$('lookarea').addEventListener('pointercancel',()=>dragging=false);
+// joystick
+if('ontouchstart'in window){$('touch').style.display='block';$('stick').addEventListener('touchmove',e=>{let r=$('stick').getBoundingClientRect(),t=e.touches[0],dx=t.clientX-(r.left+r.width/2),dy=t.clientY-(r.top+r.height/2),len=Math.hypot(dx,dy),max=43;if(len>max){dx*=max/len;dy*=max/len}$('nub').style.transform=`translate(${dx}px,${dy}px)`;joy.x=dx/max;joy.y=dy/max;e.preventDefault()},{passive:false});$('stick').addEventListener('touchend',()=>{joy.x=joy.y=0;$('nub').style.transform='translate(0,0)'})}
+function movePlayer(dt){
+ let f=(keys.KeyW?1:0)-(keys.KeyS?1:0)-joy.y,r=(keys.KeyD?1:0)-(keys.KeyA?1:0)+joy.x;let mag=Math.hypot(f,r);if(mag>1){f/=mag;r/=mag}
+ let speed=(sprinting||keys.ShiftLeft||keys.ShiftRight?10:6)*Math.min(1,energy/25);if(sprinting||keys.ShiftLeft){energy=Math.max(0,energy-23*dt)}else energy=Math.min(100,energy+12*dt);
+ let forward=new THREE.Vector3(-Math.sin(camYaw),0,-Math.cos(camYaw)),right=new THREE.Vector3(Math.cos(camYaw),0,-Math.sin(camYaw));let v=forward.multiplyScalar(f).add(right.multiplyScalar(r));
+ if(v.lengthSq()>.01){v.normalize();playerYaw=Math.atan2(-v.x,-v.z);player.position.addScaledVector(v,speed*dt)}
+ if((keys.Space)&&onGround){vertical=7;onGround=false}vertical-=18*dt;player.position.y+=vertical*dt;if(player.position.y<0){player.position.y=0;vertical=0;onGround=true}
+ player.rotation.y=THREE.MathUtils.lerp(player.rotation.y,playerYaw,.18);body.position.y=Math.sin(clock.elapsedTime*10)*.045*(mag>0?1:0);
+}
+function drive(dt){let c=inVehicle;let accel=(keys.KeyW?1:0)-(keys.KeyS?1:0)-joy.y;let steer=(keys.KeyA?1:0)-(keys.KeyD?1:0)-joy.x;
+ if(braking||keys.Space)c.speed*=Math.pow(.04,dt);else c.speed+=accel*15*dt;
+ c.speed=THREE.MathUtils.clamp(c.speed,-9,25);if(Math.abs(c.speed)<.08)c.speed=0;
+ c.g.rotation.y+=steer*dt*(.9+Math.abs(c.speed)*.045)*(c.speed>=0?1:-1);c.g.position.x-=Math.sin(c.g.rotation.y)*c.speed*dt;c.g.position.z-=Math.cos(c.g.rotation.y)*c.speed*dt;
+ // soft city bounds
+ c.g.position.x=THREE.MathUtils.clamp(c.g.position.x,-185,185);c.g.position.z=THREE.MathUtils.clamp(c.g.position.z,-185,185);
+ $('vehicleInfo').innerHTML=c.name+'<br><b>'+Math.round(Math.abs(c.speed)*3.6)+' km/h</b>';
+}
+function cameraUpdate(dt){let target;if(inside){target=new THREE.Vector3(0,1.5,2);camera.position.lerp(new THREE.Vector3(0,4,10),.12);camera.lookAt(target);return}
+ let focus=inVehicle?inVehicle.g.position:player.position;let yaw=inVehicle?inVehicle.g.rotation.y+camYaw:camYaw;let dist=inVehicle?9:7;let height=inVehicle?3.8:3.1;
+ let offset=new THREE.Vector3(Math.sin(yaw)*dist, height+camPitch*4,Math.cos(yaw)*dist);let desired=focus.clone().add(offset);camera.position.lerp(desired,1-Math.pow(.001,dt));target=focus.clone().add(new THREE.Vector3(0,inVehicle?1.2:1.5,0));camera.lookAt(target);
+}
+function mapDraw(){let c=$('mapCanvas').getContext('2d');c.clearRect(0,0,180,180);c.fillStyle='#102433';c.fillRect(0,0,180,180);c.strokeStyle='#718896';c.lineWidth=5;for(let p of roads){let x=90+(p-(inVehicle?inVehicle.g.position.x:player.position.x))*.42,y=90+(p-(inVehicle?inVehicle.g.position.z:player.position.z))*.42;c.beginPath();c.moveTo(x,0);c.lineTo(x,180);c.stroke();c.beginPath();c.moveTo(0,y);c.lineTo(180,y);c.stroke()}c.fillStyle='#f4c85c';for(let o of collectibles){let x=90+(o.g.position.x-(inVehicle?inVehicle.g.position.x:player.position.x))*.42,y=90+(o.g.position.z-(inVehicle?inVehicle.g.position.z:player.position.z))*.42;if(x>0&&x<180&&y>0&&y<180){c.beginPath();c.arc(x,y,3,0,Math.PI*2);c.fill()}}c.fillStyle='#5ce6ff';c.beginPath();c.arc(90,90,5,0,Math.PI*2);c.fill()}
+function update(dt){if(paused||!$('menu').classList.contains('hidden')||!$('modal').classList.contains('hidden'))return;
+ if(inside){if(keys.KeyF||keys.KeyE){inside=false;interior.visible=false;world.visible=true;player.position.set(120,0,14);toast('Back in the city')} }
+ else if(inVehicle)drive(dt);else movePlayer(dt);
+ collectibles.forEach((o,i)=>{o.g.rotation.y+=dt*1.5;o.g.position.y=.2+Math.sin(clock.elapsedTime*2+o.phase)*.18;let p=inVehicle?inVehicle.g.position:player.position;if(p.distanceTo(o.g.position)<2.2){cash+=o.amount;updateStats();toast('Collected $'+o.amount);scene.remove(o.g);collectibles.splice(i,1);if(o.amount>=150)mission() }});
+ cars.forEach(c=>{if(c!==inVehicle&&Math.abs(c.speed)>.1){c.g.position.x-=Math.sin(c.g.rotation.y)*c.speed*dt;c.g.position.z-=Math.cos(c.g.rotation.y)*c.speed*dt;c.speed*=.98}});
+ if(!inside)nearLandmark();cameraUpdate(dt);mapDraw();updateStats();
+}
+function animate(){requestAnimationFrame(animate);let dt=Math.min(clock.getDelta(),.04);if(!$('loading').classList.contains('hidden')){}update(dt);renderer.render(scene,camera)}
+function resize(){camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))}
+addEventListener('resize',resize);
+// shop prompt / garage sign
+interactables.push({x:60,z:-48,name:'Byte Mart',kind:'shop'});
+// loading sequence
+let progress=0;let loadTimer=setInterval(()=>{progress+=8;$('loadfill').style.width=progress+'%';$('loadtext').textContent=progress<40?'Laying roads and buildings…':progress<75?'Adding vehicles and city life…':'Preparing your adventure…';if(progress>=100){clearInterval(loadTimer);$('loading').classList.add('hidden');$('menu').classList.remove('hidden');$('touch').style.display=('ontouchstart'in window)?'block':'none'}},90);
+animate();
+</script>
+</body></html>
